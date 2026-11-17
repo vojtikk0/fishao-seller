@@ -1,0 +1,49 @@
+FISHAO SELLER – automatický prodej ryb podle cen z fishao-tracker.cz
+=====================================================================
+
+CO TO DĚLÁ
+  Projde seznam v obchodě „NAŠE DNEŠNÍ CENY“, u každé ryby přečte název, počet a dnešní
+  cenu, porovná ji s historií cen z fishao-tracker.cz a výhodné ryby prodá (všechny kusy).
+
+CO POTŘEBUJEŠ
+  - Windows 10/11 s češtinou (kvůli rozpoznávání textu). Pokud program hlásí, že OCR pro
+    češtinu chybí: Nastavení → Čas a jazyk → Jazyk a oblast → Čeština → … → Možnosti
+    jazyka → doinstalovat „Optické rozpoznávání znaků“.
+  - Nainstalovaný Microsoft Edge nebo Google Chrome (jen kvůli stažení cen, nic se neotevře).
+  - Hru v češtině.
+
+JAK NA TO
+  1. Spusť hru a otevři obchod s rybami („NAŠE DNEŠNÍ CENY“). Seznam nech nahoře.
+  2. Spusť FishaoSeller.exe.
+  3. Klikni „Test detekce“ – ukáže obrázek: zeleně = prodal by, červeně = neprodá,
+     oranžově = nedokázal přečíst. Hra se při tom jen přepne do popředí, nic se neklikne.
+  4. Nech zapnuté „NANEČISTO“ a dej START – projde celý seznam a jen vypíše, co by prodal.
+  5. Když to sedí, vypni „NANEČISTO“ a dej START znovu.
+  Během běhu na nic neklikej a nepřepínej okna (bot se pak sám zastaví).
+
+NOUZOVÉ ZASTAVENÍ
+  F12, nebo myš do levého horního rohu obrazovky, nebo tlačítko STOP.
+
+BEZPEČNOSTNÍ POJISTKY
+  - Název ryby musí jednoznačně odpovídat rybě z trackeru, jinak ji přeskočí.
+  - Cena se čte několikrát a všechna čtení se musí shodnout; volitelně se porovná
+    i s dnešní cenou v trackeru.
+  - Po prodeji kontroluje hlášku „Úspěšně jsi prodal …“ (musí to být ta správná ryba)
+    a nárůst peněz. Cokoli nečekaného = okamžité zastavení.
+  - Složka „logs“: prodeje.csv (co, kolik, za kolik) + screenshoty každého prodeje.
+
+NASTAVENÍ PRAVIDEL
+  - „Cena v horní části rozmezí“ (výchozí) – bere rozmezí „Známé ceny: min–max“ z trackeru.
+    X = 80 % znamená: prodá, když dnešní cena leží v horních 20 % rozmezí.
+    Příklad: rozmezí 34–73, X = 80 % → prodá od ceny 65.
+  - „Cena ≥ X % z maxima“ – např. 90 % = prodá, když je dnes cena aspoň 90 % nejlepší
+    ceny za posledních N dní.
+  - „Cena ≥ průměr + X %“ – např. 10 % = prodá, když je cena o 10 % nad průměrem.
+  - „X. percentil“ – např. 75 = prodá, když je dnešní cena mezi nejlepšími 25 % dní.
+  - „Min. známých dní“ – kolik dní historie musí tracker znát, jinak se řídí volbou
+    „Když je málo dat“.
+  - Seznamy NIKDY / VŽDY – názvy ryb, 1 na řádek.
+
+UPOZORNĚNÍ
+  Automatizace hry může být proti pravidlům hry – používáš na vlastní riziko.
+  V neděli (UTC) má Fish Market zavřeno, bot se nespustí.

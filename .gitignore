@@ -1,0 +1,15 @@
+# build
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+
+# runtime data (per user)
+logs/
+settings.json
+tracker_cache.json
+
+# local source images / screenshots (test copies live in tests/screens)
+/Snímek obrazovky*.png
+/kailaantiradar*.jpg
