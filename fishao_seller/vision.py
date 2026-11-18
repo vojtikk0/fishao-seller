@@ -224,23 +224,34 @@ def list_signature(img, buttons):
 
 
 def find_scroll_thumb(img, buttons) -> Optional[Rect]:
-    """Bright vertical scrollbar thumb right of the sell buttons."""
+    """Bright vertical scrollbar thumb right of the sell buttons.
+
+    Just right of the track runs a 1 px bright highlight of the panel border, as tall as
+    a short thumb – it must never win, or the drag grabs empty space next to the bar.
+    So the thumb has to be several px wide, and the nearest such bar to the list wins."""
     if not buttons:
         return None
     b = buttons[0]
     H, W = img.shape[:2]
     x0 = min(W - 1, b.x + b.w + int(0.1 * b.h))
     x1 = min(W, b.x + b.w + int(1.3 * b.h))
-    y0 = max(0, min(bb.y for bb in buttons) - 3 * b.h)
-    y1 = min(H, max(bb.y for bb in buttons) + 2 * b.h)
+    # the thumb can sit at the very top/bottom of the track, beyond the visible buttons
+    y0 = max(0, min(bb.y for bb in buttons) - 5 * b.h)
+    y1 = min(H, max(bb.y for bb in buttons) + 4 * b.h)
     hsv = cv2.cvtColor(img[y0:y1, x0:x1], cv2.COLOR_BGR2HSV)
     m = cv2.inRange(hsv, (0, 0, 235), (180, 45, 255))
     n, _, st, _ = cv2.connectedComponentsWithStats(m)
+    min_w = max(3, int(0.08 * b.h))
     best = None
     for i in range(1, n):
         x, y, w, h, a = (int(v) for v in st[i])
-        if h > 1.5 * b.h and w < 0.5 * b.h and (best is None or h > best.h):
-            best = Rect(x0 + x, y0 + y, w, h)
+        if h < 1.0 * b.h or not (min_w <= w < 0.5 * b.h) or a < 0.6 * w * h:
+            continue
+        if x == 0:  # cut-off right edge of a fish card, not the scrollbar
+            continue
+        r = Rect(x0 + x, y0 + y, w, h)
+        if best is None or r.x < best.x or (r.x == best.x and r.h > best.h):
+            best = r
     return best
 
 
@@ -289,13 +300,33 @@ def read_qty_dialog(img, title_line, ok_btn: Rect) -> Optional[int]:
     return v
 
 
-def parse_sold_name(lines) -> Optional[str]:
+def _continuation_lines(lines, first, stop_y=None):
+    """Lines that continue `first` when the game wraps a long text onto more rows:
+    directly below it (gap under ~1 line height) and horizontally overlapping it."""
+    out, prev = [], first
+    for l in sorted((l for l in lines if l.y > first.y), key=lambda l: l.y):
+        if stop_y is not None and l.y + l.h > stop_y:
+            break
+        h = max(prev.h, l.h, 1)
+        if l.y - (prev.y + prev.h) > h * 1.2:
+            break
+        cx = l.x + l.w / 2
+        if not (first.x - h * 2 <= cx <= first.x + first.w + h * 2):
+            continue
+        out.append(l)
+        prev = l
+    return out
+
+
+def parse_sold_name(lines, stop_y=None) -> Optional[str]:
+    """Fish name from the "Úspěšně jsi prodal ..." message. Long names wrap onto a second row,
+    so rows right below the message are joined too (up to `stop_y`, e.g. the OK button)."""
     for l in lines:
         d = deaccent(l.text)
         if "prodal" in d:
-            t = l.text
+            t = " ".join([l.text] + [c.text for c in _continuation_lines(lines, l, stop_y)])
             i = t.lower().find("prodal")
             rest = t[i + len("prodal"):]
             rest = re.sub(r"^[a-záé]*\s+", "", rest, count=1) if rest[:1] not in (" ",) else rest
-            return rest.strip(" !.: ")
+            return re.sub(r"\s+", " ", rest).strip(" !.: ")
     return None

@@ -316,7 +316,7 @@ class Bot:
             lines = ocr.read_lines(im)
             if vision.find_line(lines, "prodat", "kus"):
                 return None  # still the quantity dialog
-            sold_name = vision.parse_sold_name(lines)
+            sold_name = vision.parse_sold_name(lines, stop_y=blues[0].y)
             if sold_name is not None:
                 return ("ok", sold_name, blues[0])
             txt = " / ".join(l.text for l in lines if l.y > im.shape[0] * 0.3 and l.y < im.shape[0] * 0.75)
