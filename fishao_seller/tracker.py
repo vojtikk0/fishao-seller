@@ -1,7 +1,7 @@
 """Price data from https://fishao-tracker.cz/#market.
 
 The site protects its database (Firebase App Check / reCAPTCHA), so we open the
-page in a real headless browser (Edge or Chrome already installed in Windows)
+page in a real browser window placed off-screen (Edge or Chrome already installed in Windows)
 via the DevTools protocol and read the data the page itself loads.
 """
 import json
@@ -96,9 +96,12 @@ def fetch(log=print, timeout=90):
         raise RuntimeError("Nenašel jsem Edge ani Chrome. Nainstaluj jeden z nich (stačí mít nainstalovaný).")
     port = _free_port()
     prof = tempfile.mkdtemp(prefix="fishao_seller_")
-    args = [exe, "--headless=new", f"--remote-debugging-port={port}", "--remote-allow-origins=*",
+    # Not --headless: reCAPTCHA Enterprise (Firebase App Check) rejects headless browsers with 403
+    # and the prices never load. A normal window parked off-screen passes.
+    args = [exe, f"--remote-debugging-port={port}", "--remote-allow-origins=*",
             f"--user-data-dir={prof}", "--no-first-run", "--no-default-browser-check",
-            "--disable-extensions", "--mute-audio", "about:blank"]
+            "--disable-extensions", "--mute-audio", "--window-position=-32000,-32000",
+            "--window-size=1280,800", "about:blank"]
     log(f"Načítám ceny z trackeru ({os.path.basename(exe)})…")
     proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
