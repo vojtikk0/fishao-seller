@@ -276,7 +276,7 @@ class Bot:
         if not same or not vision.same_region(vision.card_signature(scan_img, b), vision.card_signature(img, b)):
             self.log("  (seznam se pohnul, čtu znovu)")
             return "retry"
-        money_before = vision.top_bar_numbers(img)
+        money_before = vision.read_fishbucks(img)
 
         # 2) click the price button
         self.click(b.cx, b.cy)
@@ -339,13 +339,18 @@ class Bot:
 
         # 6) money check
         total = card.price * qty
-        money_after = vision.top_bar_numbers(img)
-        verified = any((b0 + total) in money_after for b0 in money_before)
+        # the HUD may still be fading back from the dialog dim -> retry on fresh shots
+        _, money_after = self.wait_for(
+            lambda im: money_before is not None and vision.read_fishbucks(im) == money_before + total,
+            timeout=3)
+        money_after = money_before + total if money_after else vision.read_fishbucks(self.grab())
+        verified = money_before is not None and money_after == money_before + total
         if verified:
-            self.log(f"  ✔ prodáno {qty}× {name} za {total} FB (peníze sedí)")
+            self.log(f"  ✔ prodáno {qty}× {name} za {total} FB (peníze sedí: {money_before} → {money_after} FB)")
         else:
+            fmt = lambda v: "nečitelné" if v is None else f"{v} FB"
             msg = (f"  ⚠ prodáno {qty}× {name}, ale nárůst peněz o {total} FB se nepodařilo ověřit "
-                   f"(před {money_before}, po {money_after})")
+                   f"(před {fmt(money_before)}, po {fmt(money_after)})")
             self.log(msg)
             if self.s.strict_money_check:
                 raise Abort("Kontrola peněz nesedí – zastavuji pro jistotu (lze vypnout v nastavení).")

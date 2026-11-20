@@ -21,7 +21,7 @@ for f in shots:
     img = cv2.imdecode(np.fromfile(f, np.uint8), cv2.IMREAD_COLOR)
     print("==", os.path.basename(f), img.shape[1], "x", img.shape[0])
     lines = ocr.read_lines(img)
-    print("   shop open:", vision.shop_is_open(lines), "| top numbers:", vision.top_bar_numbers(img))
+    print("   shop open:", vision.shop_is_open(lines), "| top numbers:", vision.top_bar_numbers(img), "| FB:", vision.read_fishbucks(img))
     for b in vision.find_sell_buttons(img):
         c = vision.read_card(img, b)
         line = f"   card y={b.y}: name={c.name!r} count={c.count} price={c.price} ({c.price_detail})"

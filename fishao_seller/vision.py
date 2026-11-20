@@ -272,6 +272,37 @@ def find_line(lines, *needles):
     return None
 
 
+def read_fishbucks(img) -> Optional[int]:
+    """Fishbucks from the top HUD: the light pill with the green banknote icon on its left.
+
+    Only the digits inside that pill are read, so neither the icon nor the coins
+    pill can leak into the number. Returns None when it can't be read reliably.
+    """
+    H = img.shape[0]
+    top = img[0:int(H * 0.1), :].copy()
+    # the HUD is dimmed while a dialog is open / fading out -> stretch brightness
+    hi = float(np.percentile(cv2.cvtColor(top, cv2.COLOR_BGR2HSV)[:, :, 2], 99.5))
+    if 20 < hi < 200:
+        top = np.clip(top.astype(np.float32) * (235.0 / hi), 0, 255).astype(np.uint8)
+    hsv = cv2.cvtColor(top, cv2.COLOR_BGR2HSV)
+    m = cv2.inRange(hsv, (5, 25, 120), (30, 170, 255))  # light tan pill fill
+    m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((3, 9), np.uint8))
+    _, _, st, _ = cv2.connectedComponentsWithStats(m)
+    best, best_green = None, 30
+    for x, y, w, h, a in st[1:]:
+        if h < 12 or not (2.5 * h <= w <= 12 * h) or a < 0.5 * w * h:
+            continue
+        icon = hsv[max(0, y - h // 2):y + h + h // 2, max(0, x - 2 * h):x + h // 2]
+        green = cv2.countNonZero(cv2.inRange(icon, (40, 80, 60), (85, 255, 255)))
+        if green > best_green:
+            best, best_green = (x, y, w, h), green
+    if not best:
+        return None
+    x, y, w, h = best
+    v, _ = read_number(top[y:y + h, x + h // 2:x + w - 2], dark=True)
+    return v
+
+
 def top_bar_numbers(img):
     """All integers in the top HUD strip (money is one of them)."""
     H = img.shape[0]
