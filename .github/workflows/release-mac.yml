@@ -25,7 +25,7 @@ jobs:
       - name: Kontrola verze
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          V=$(python3 -c "import re;print(re.search(r'\"(.+)\"',open('fishao_seller/__init__.py').read()).group(1))")
+          V=$(python3 -c "import fishao_seller; print(fishao_seller.__version__)")
           test "mac-v$V" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME != verze $V"; exit 1; }
 
       - name: Build
