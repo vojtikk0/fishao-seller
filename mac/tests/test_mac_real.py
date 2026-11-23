@@ -169,14 +169,20 @@ def test_quartz():
             return
         iw, ih, rx, ry, sw, sh = map(int, ready)
         print(f"  (screen {sw}x{sh} pt, window content {iw}x{ih} at {rx},{ry})")
-        wid = None
+        wid, best = None, 0
         for w in macutil._all_windows():
             if int(w.get(Quartz.kCGWindowOwnerPID, -1)) == p.pid and w.get(Quartz.kCGWindowLayer) == 0:
-                wid = int(w[Quartz.kCGWindowNumber])
+                b = w.get(Quartz.kCGWindowBounds) or {}
+                print(f"  (child window {w[Quartz.kCGWindowNumber]}: {dict(b)} onscreen={w.get(Quartz.kCGWindowIsOnscreen)})")
+                if b.get("Width", 0) * b.get("Height", 0) > best:
+                    wid, best = int(w[Quartz.kCGWindowNumber]), b.get("Width", 0) * b.get("Height", 0)
         check("window listed by CGWindowListCopyWindowInfo", wid is not None)
         if wid is None:
             return
+        single = Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionIncludingWindow, wid) or []
+        print(f"  (single-window query returned {len(single)} entries)")
         info = macutil._info(wid)
+        check("window info by number", info is not None)
         title = str(info.get(Quartz.kCGWindowName) or "")
         check("window title readable", title == "FISHAO - Reborn", f"got {title!r}", warn=not scr)
         x, y, w, h = macutil.client_rect(wid)

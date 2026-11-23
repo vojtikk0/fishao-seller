@@ -21,6 +21,9 @@ jobs:
         run: sw_vers && system_profiler SPDisplaysDataType | grep -E "Resolution|Retina" || true
       - name: Test on real macOS APIs
         run: python3 mac/tests/test_mac_real.py --out test-out
+      - name: OCR diagnostics (fish names)
+        if: always()
+        run: python3 mac/tests/ocr_diag.py --out test-out
       - name: Build .app
         if: always()
         run: bash mac/build_mac.sh

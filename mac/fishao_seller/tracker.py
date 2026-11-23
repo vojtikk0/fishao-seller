@@ -100,6 +100,9 @@ def fetch(log=print, timeout=90):
     args = [exe, f"--remote-debugging-port={port}", "--remote-allow-origins=*",
             f"--user-data-dir={prof}", "--no-first-run", "--no-default-browser-check",
             "--disable-extensions", "--mute-audio", "--window-position=-32000,-32000",
+            # macOS throttles windows it considers hidden/occluded -> the page would never finish
+            "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding",
+            "--disable-background-timer-throttling",
             "--window-size=1280,800", "about:blank"]
     log(f"Načítám ceny z trackeru ({os.path.basename(exe)})…")
     proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -133,7 +136,10 @@ def fetch(log=print, timeout=90):
                 stable = 0
             last = n
         else:
-            raise RuntimeError("Tracker se nenačetl včas (zkontroluj internet).")
+            state = cdp.eval("document.readyState + ' | ' + location.href + ' | allFishes=' + "
+                             "(typeof allFishes!=='undefined' ? allFishes.length : '-') + ' | prices=' + "
+                             "(typeof priceSummary==='object' ? Object.keys(priceSummary).length : '-')")
+            raise RuntimeError(f"Tracker se nenačetl včas (zkontroluj internet). [{state}]")
         raw = cdp.eval(_EXTRACT_JS)
         if not raw:
             raise RuntimeError("Z trackeru se nepodařilo přečíst data.")

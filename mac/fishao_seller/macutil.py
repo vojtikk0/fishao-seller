@@ -50,6 +50,10 @@ def _info(wid):
     for w in lst:
         if int(w.get(Quartz.kCGWindowNumber, -1)) == int(wid):
             return w
+    # on some macOS versions the single-window query comes back empty -> search the full list
+    for w in _all_windows():
+        if int(w.get(Quartz.kCGWindowNumber, -1)) == int(wid):
+            return w
     return None
 
 
