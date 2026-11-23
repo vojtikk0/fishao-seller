@@ -1,0 +1,58 @@
+# Windows verze (kořen repa). Release vznikne pushnutím tagu win-vX.Y.Z,
+# kde X.Y.Z musí odpovídat __version__ v fishao_seller/__init__.py.
+name: Release Windows
+
+on:
+  push:
+    tags: ["win-v*"]
+  workflow_dispatch:   # jen sestavení na zkoušku, bez releasu
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Kontrola verze
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          V=$(python -c "import re;print(re.search(r'\"(.+)\"',open('fishao_seller/__init__.py').read()).group(1))")
+          test "win-v$V" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME != verze $V"; exit 1; }
+
+      - name: Build
+        shell: cmd
+        run: build.bat
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FishaoSeller-win
+          path: |
+            dist/FishaoSeller.exe
+            dist/NAVOD.txt
+
+      - name: GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${GITHUB_REF_NAME#win-v}"
+          cat > notes.md <<EOF
+          **Verze pro Windows 10/11.** Verze pro Mac je v releasech \`mac-v…\`.
+
+          **Stáhni \`FishaoSeller.exe\`** (a případně \`NAVOD.txt\`) a nahraď jím starou verzi. Nastavení ve stejné složce zůstane.
+
+          - Při prvním spuštění Windows možná ukáže „Systém Windows ochránil váš počítač“. Klikni na **Další informace → Přesto spustit** (program není podepsaný).
+          - Nouzové zastavení: **F12**, nebo myš do levého horního rohu obrazovky.
+
+          ⚠️ Automatizace hry může být proti pravidlům hry – používáš na vlastní riziko.
+          EOF
+          gh release create "$GITHUB_REF_NAME" dist/FishaoSeller.exe dist/NAVOD.txt \
+            --title "Fishao Seller Windows $V" --notes-file notes.md --latest

@@ -1,0 +1,41 @@
+FISHAO SELLER pro macOS – automatický prodej ryb podle cen z fishao-tracker.cz
+=============================================================================
+
+CO TO DĚLÁ
+  Projde seznam v obchodě „NAŠE DNEŠNÍ CENY“, u každé ryby přečte název, počet a dnešní
+  cenu, porovná ji s historií cen z fishao-tracker.cz a výhodné ryby prodá (všechny kusy).
+  Pravidla prodeje a pojistky jsou stejné jako ve verzi pro Windows.
+
+CO POTŘEBUJEŠ
+  - Mac s Apple Silicon (M1 a novější), macOS 12 nebo novější.
+    Čeština v rozpoznávání textu je až od novějších verzí macOS. Na starších se čte bez
+    diakritiky, což kvůli párování názvů obvykle nevadí. Vždy ale nejdřív udělej Test detekce.
+  - Nainstalovaný Google Chrome, Microsoft Edge nebo Brave (jen kvůli stažení cen).
+    Při stahování cen se může na chvíli objevit okno prohlížeče, to je v pořádku.
+  - Hru v češtině.
+
+PRVNÍ SPUŠTĚNÍ
+  1. Rozbal FishaoSeller-mac.zip a přetáhni „Fishao Seller.app“ do Aplikací.
+  2. Aplikace není podepsaná u Applu, proto ji poprvé otevři pravým tlačítkem → Otevřít
+     → Otevřít. Když macOS hlásí, že je „poškozená“, spusť v Terminálu:
+        xattr -cr "/Applications/Fishao Seller.app"
+  3. Při prvním Testu detekce si macOS řekne o dvě oprávnění. Povol je v
+     Nastavení systému → Soukromí a zabezpečení:
+       - Nahrávání obrazovky (bot musí vidět hru)
+       - Zpřístupnění (bot musí klikat)
+     Pak aplikaci úplně ukonči (Cmd+Q) a spusť znovu.
+
+JAK NA TO
+  Stejně jako ve Windows: otevři ve hře obchod „NAŠE DNEŠNÍ CENY“ a dej Test detekce.
+  Pak START v režimu NANEČISTO. Když výpis sedí, vypni NANEČISTO a spusť naostro.
+  Během běhu na nic neklikej a nepřepínej okna.
+
+NOUZOVÉ ZASTAVENÍ
+  F12 (na MacBooku obvykle fn+F12), myš do levého horního rohu hlavní obrazovky, nebo STOP.
+
+KDE JSOU DATA
+  Nastavení, ceny a složka logs (prodeje.csv + screenshoty):
+  ~/Library/Application Support/Fishao Seller
+
+UPOZORNĚNÍ
+  Automatizace hry může být proti pravidlům hry – používáš na vlastní riziko.

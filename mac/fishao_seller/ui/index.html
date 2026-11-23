@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fishao Seller</title>
+<link rel="stylesheet" href="vendor/fonts.css">
+<link rel="stylesheet" href="vendor/nocturne.css">
+<link rel="stylesheet" href="vendor/ph-regular.css">
+<link rel="stylesheet" href="vendor/ph-fill.css">
+<style>
+html, body { height: 100%; overflow: hidden; }
+body { margin: 0; background: var(--color-bg); font-family: var(--font-body); color: var(--color-text); user-select: none; }
+input, textarea, select { user-select: text; }
+a { color: var(--color-accent-300); } a:hover { color: var(--color-accent-200); }
+select.input { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--color-neutral-400) 50%), linear-gradient(135deg, var(--color-neutral-400) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
+select.input option { background: #232532; }
+input[type=number].input::-webkit-inner-spin-button { opacity: .5; }
+
+.app { height: 100vh; display: flex; flex-direction: column; border: 1px solid var(--color-divider); }
+.titlebar { display: flex; align-items: center; gap: 10px; height: 36px; flex: none; padding-left: 14px; background: color-mix(in srgb, var(--color-bg) 70%, #000); font-size: 12px; color: var(--color-neutral-400); }
+.tb-btn { width: 44px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.tb-btn:hover { background: var(--color-neutral-900); }
+.tb-btn.close:hover { background: #c42b1c; color: var(--color-neutral-100); }
+.main { flex: 1; min-height: 0; display: grid; grid-template-columns: 300px minmax(0, 1fr); }
+
+.left { position: relative; display: flex; flex-direction: column; min-height: 0; overflow: hidden; background: linear-gradient(180deg, var(--color-accent-900) 0%, var(--color-bg) 70%); border-right: 1px solid var(--color-divider); }
+.hero { position: relative; height: 300px; flex: none; overflow: hidden; }
+.hero img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; display: block; -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%); mask-image: linear-gradient(180deg, #000 55%, transparent 100%); }
+.left-body { padding: 0 20px 20px; margin-top: -40px; position: relative; display: flex; flex-direction: column; gap: 14px; flex: 1; min-height: 0; }
+
+#statusDot.pulse { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.right { display: flex; flex-direction: column; gap: 14px; padding: 20px; min-width: 0; min-height: 0; overflow-y: auto; }
+.right::-webkit-scrollbar, .log::-webkit-scrollbar { width: 10px; }
+.right::-webkit-scrollbar-thumb, .log::-webkit-scrollbar-thumb { background: var(--color-neutral-800); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
+.lbl { font-size: 12px; color: var(--color-neutral-400); }
+.col { display: flex; flex-direction: column; gap: 4px; }
+.sec-head { display: flex; align-items: center; gap: 8px; }
+.sec-head i { color: var(--color-accent); }
+
+.switch { width: 32px; height: 18px; border-radius: 9px; flex: none; position: relative; background: var(--color-neutral-900); border: 1px solid var(--color-divider); transition: background .15s, border-color .15s; }
+.switch > div { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--color-neutral-100); transition: left .15s; }
+.on > .switch, .switch.on { background: var(--color-accent-700); border-color: var(--color-accent); }
+.on > .switch > div, .switch.on > div { left: 16px; }
+.toggle-row { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; }
+.toggle-box { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--color-divider); }
+#dryBox:not(.on) { border-color: #f0a39b; background: color-mix(in srgb, #f0a39b 8%, transparent); }
+
+.log { flex: 1; min-height: 130px; overflow: auto; padding: 10px 12px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--color-bg) 60%, #000); border: 1px solid var(--color-divider); font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11.5px; line-height: 1.6; color: var(--color-neutral-300); user-select: text; }
+.log > div { display: flex; gap: 10px; }
+.log .t { color: var(--color-neutral-600); flex: none; }
+.log .ok { color: #8fd4a8; } .log .err { color: #f0a39b; }
+
+.dialog.wide { width: min(1100px, 100%); max-height: calc(100vh - 40px); }
+.dialog.wide img { max-height: calc(100vh - 200px); width: auto; margin: 0 auto; border-radius: var(--radius-md); }
+.legend { display: flex; gap: 14px; font-size: 12px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- title bar -->
+  <div class="titlebar pywebview-drag-region">
+    <i class="ph-fill ph-fish-simple" style="color:var(--color-accent);font-size:15px;"></i>
+    <span id="appTitle">Fishao Seller</span>
+    <div style="flex:1;"></div>
+    <div style="display:flex;">
+      <div class="tb-btn" onclick="api('win_minimize')" title="Minimalizovat"><i class="ph ph-minus"></i></div>
+      <div class="tb-btn" onclick="api('win_toggle_max')" title="Maximalizovat"><i class="ph ph-square"></i></div>
+      <div class="tb-btn close" onclick="api('win_close')" title="Zavřít"><i class="ph ph-x"></i></div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- LEFT: hero + controls -->
+    <div class="left">
+      <div class="hero pywebview-drag-region">
+        <img src="maskot.jpg" alt="">
+        <div style="position:absolute;left:18px;top:16px;display:flex;gap:6px;">
+          <span class="tag tag-accent" id="verTag">v1.0.3</span>
+          <span class="tag tag-neutral" id="dryTag">NANEČISTO</span>
+        </div>
+      </div>
+      <div class="left-body">
+        <div>
+          <div class="card-kicker">Autosell ryb</div>
+          <h1 style="margin:4px 0 0;font-size:28px;line-height:1.1;letter-spacing:-0.01em;">Fishao Seller</h1>
+          <div class="text-muted" style="font-size:12px;margin-top:6px;">Ceny z fishao-tracker.cz</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--radius-md);background:color-mix(in srgb, var(--color-surface) 70%, transparent);border:1px solid var(--color-divider);font-size:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="statusDot" style="width:8px;height:8px;border-radius:50%;flex:none;"></span>
+            <span id="statusText" style="font-weight:500;">Připraveno</span>
+          </div>
+          <div class="text-muted" id="dataText">Ceny z trackeru zatím nestaženy.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:auto;">
+          <button class="btn btn-primary" id="btnStart" style="height:46px;font-size:15px;width:100%;box-shadow:0 0 24px color-mix(in srgb, var(--color-accent) 25%, transparent);" onclick="start()"><i class="ph-fill ph-play"></i>START</button>
+          <button class="btn btn-secondary" id="btnStop" hidden style="height:46px;font-size:15px;width:100%;color:#f0a39b;border-color:#f0a39b;" onclick="api('stop')"><i class="ph-fill ph-stop"></i>STOP</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="btn btn-secondary busy-off" style="font-size:12px;" onclick="showLog();api('fetch')"><i class="ph ph-arrows-clockwise"></i>Načíst ceny</button>
+            <button class="btn btn-secondary busy-off" style="font-size:12px;" onclick="showLog();api('test')"><i class="ph ph-scan"></i>Test detekce</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#f0a39b;padding-top:4px;">
+            <i class="ph ph-warning"></i><span>Nouzové zastavení: F12 nebo myš do levého horního rohu obrazovky.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: settings -->
+    <div class="right">
+
+      <!-- Hra -->
+      <div class="card" style="gap:10px;padding:14px;">
+        <div class="sec-head"><i class="ph ph-game-controller"></i><span class="card-title" style="font-size:14px;">Hra</span></div>
+        <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;">
+          <div class="col" style="flex:1;min-width:200px;">
+            <label style="font-size:12px;">Název okna hry</label>
+            <input class="input" data-k="window_title">
+          </div>
+          <button class="btn btn-secondary" style="height:36px;" onclick="findWindow()"><i class="ph ph-magnifying-glass"></i>Najít okno</button>
+          <span class="tag" id="winTag" hidden style="height:22px;"></span>
+        </div>
+        <div class="text-muted" style="font-size:11px;">Rozlišení i velikost okna se zjišťují automaticky (okno i celá obrazovka). Hra musí být vidět, ne minimalizovaná.</div>
+      </div>
+
+      <!-- Kdy prodat -->
+      <div class="card" style="gap:12px;padding:14px;">
+        <div class="sec-head"><i class="ph ph-tag"></i><span class="card-title" style="font-size:14px;">Kdy prodat</span><span class="text-muted" style="font-size:11px;">ceny z fishao-tracker.cz</span></div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:10px;align-items:end;">
+          <div class="col">
+            <label class="lbl">Pravidlo</label>
+            <select class="input" id="mode" data-k="mode">
+              <option value="range">Cena v horní části rozmezí min–max (X % = kde v rozmezí leží)</option>
+              <option value="pct_max">Cena ≥ X % z maxima za období</option>
+              <option value="above_avg">Cena ≥ průměr + X %</option>
+              <option value="percentile">Cena ≥ X. percentil (patří mezi nejlepší dny)</option>
+            </select>
+          </div>
+          <div class="col">
+            <label class="lbl">X =</label>
+            <div style="position:relative;"><input class="input" id="xVal" type="number" step="5" min="0" style="padding-right:26px;"><span id="xUnit" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-neutral-400);">%</span></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end;">
+          <div class="col"><label class="lbl">Historie (dní)</label><input class="input" type="number" min="1" data-k="history_days"></div>
+          <div class="col"><label class="lbl">Min. známých dní</label><input class="input" type="number" min="1" data-k="min_samples"></div>
+          <div class="col"><label class="lbl">Když je málo dat</label>
+            <select class="input" data-k="no_data_action"><option value="skip">Neprodávat</option><option value="estimate">Použít odhad trackeru</option><option value="sell">Prodat stejně</option></select></div>
+          <div class="col"><label class="lbl">Min. celkem za druh (FB)</label><input class="input" type="number" min="0" data-k="min_total"></div>
+        </div>
+        <div class="toggle-row" data-toggle="verify_with_tracker">
+          <div class="switch"><div></div></div>
+          <span>Neprodat, když se přečtená cena liší od dnešní ceny v trackeru</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="col">
+            <label class="lbl" style="display:flex;align-items:center;gap:6px;"><i class="ph ph-prohibit" style="color:#f0a39b;"></i>NIKDY neprodávat <span class="text-muted">(1 ryba na řádek)</span></label>
+            <textarea class="input" style="min-height:76px;font-size:13px;" placeholder="např. Zlatý kapr" data-k="never_sell" data-list></textarea>
+          </div>
+          <div class="col">
+            <label class="lbl" style="display:flex;align-items:center;gap:6px;"><i class="ph ph-check-circle" style="color:#8fd4a8;"></i>VŽDY prodat <span class="text-muted">(bez ohledu na cenu)</span></label>
+            <textarea class="input" style="min-height:76px;font-size:13px;" placeholder="např. Plotice" data-k="always_sell" data-list></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bezpečnost -->
+      <div class="card" style="gap:12px;padding:14px;">
+        <div class="sec-head"><i class="ph ph-shield-check"></i><span class="card-title" style="font-size:14px;">Bezpečnost</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="toggle-box" id="dryBox" data-toggle="dry_run">
+            <div class="switch"><div></div></div>
+            <div><div style="font-weight:500;">NANEČISTO</div><div class="text-muted" style="font-size:11px;margin-top:2px;">jen ukázat, co by prodal (nic neklikat na prodej)</div></div>
+          </div>
+          <div class="toggle-box" data-toggle="strict_money_check">
+            <div class="switch"><div></div></div>
+            <div><div style="font-weight:500;">Kontrola peněz</div><div class="text-muted" style="font-size:11px;margin-top:2px;">Zastavit, když nesedí kontrola peněz po prodeji</div></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="col"><label class="lbl">Pauza mezi kroky (ms)</label><input class="input" type="number" step="100" min="200" data-k="action_delay_ms"></div>
+          <div class="col"><label class="lbl">Max. prodejů za spuštění</label><input class="input" type="number" min="1" data-k="max_sales"></div>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:180px;">
+        <div class="sec-head">
+          <i class="ph ph-terminal-window"></i>
+          <span style="font-size:13px;font-weight:500;">Log</span>
+          <div style="flex:1;"></div>
+          <button class="btn btn-ghost" style="font-size:12px;height:26px;" onclick="api('open_logs')"><i class="ph ph-folder-open"></i>Logy</button>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- confirm dialog -->
+<div class="dialog-backdrop" id="confirmDlg" hidden>
+  <div class="dialog">
+    <div class="dialog-title"><i class="ph ph-warning" style="color:#f0a39b;"></i> Ostrý režim</div>
+    <div class="dialog-body">Režim NANEČISTO je vypnutý – bot bude opravdu prodávat.<br>Máš ve hře otevřený obchod „Naše dnešní ceny“?</div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm(false)">Zrušit</button>
+      <button class="btn btn-primary" onclick="closeConfirm(true)"><i class="ph-fill ph-play"></i>Prodávat</button>
+    </div>
+  </div>
+</div>
+
+<!-- preview dialog -->
+<div class="dialog-backdrop" id="previewDlg" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="dialog wide">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="dialog-title" style="flex:1;">Náhled detekce</div>
+      <div class="legend">
+        <span style="--c:#00aa00">prodal by</span><span style="--c:#dc0000">neprodá</span><span style="--c:#ff8c00">nečitelné</span>
+      </div>
+      <div class="tb-btn" style="width:32px;height:32px;border-radius:var(--radius-md);" onclick="document.getElementById('previewDlg').hidden=true"><i class="ph ph-x"></i></div>
+    </div>
+    <img id="previewImg" alt="">
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const MODE_KEY = { range: 'pct_in_range', pct_max: 'pct_of_max', above_avg: 'pct_above_avg', percentile: 'percentile' };
+let S = {};          // settings mirror
+let running = false;
+
+function api(name, ...args) {
+  if (!window.pywebview || !pywebview.api) return Promise.resolve(null);
+  return pywebview.api[name](...args).catch(e => { addLog('', '✖ ' + e, 'err'); return null; });
+}
+
+// ---- settings binding -------------------------------------------------------
+function fill() {
+  document.querySelectorAll('[data-k]').forEach(el => {
+    const v = S[el.dataset.k];
+    el.value = el.hasAttribute('data-list') ? (v || []).join('\n') : (v ?? '');
+  });
+  $('#xVal').value = S[MODE_KEY[S.mode]];
+  document.querySelectorAll('[data-toggle]').forEach(el => el.classList.toggle('on', !!S[el.dataset.toggle]));
+  renderMode(); renderDry();
+}
+function renderMode() { $('#xUnit').textContent = S.mode === 'percentile' ? '.' : '%'; }
+function renderDry() { $('#dryTag').hidden = !S.dry_run; }
+
+let saveTimer = null;
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => api('save_settings', S), 350); }
+
+document.querySelectorAll('[data-k]').forEach(el => {
+  const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+  el.addEventListener(ev, () => {
+    const k = el.dataset.k;
+    if (el.hasAttribute('data-list')) S[k] = el.value.split('\n').map(x => x.trim()).filter(Boolean);
+    else if (el.type === 'number') { const n = parseFloat(el.value); if (isNaN(n)) return; S[k] = n; }
+    else S[k] = el.value;
+    if (k === 'mode') { $('#xVal').value = S[MODE_KEY[S.mode]]; renderMode(); }
+    scheduleSave();
+  });
+});
+$('#xVal').addEventListener('input', () => {
+  const n = parseFloat($('#xVal').value); if (isNaN(n)) return;
+  S[MODE_KEY[S.mode]] = n; scheduleSave();
+});
+document.querySelectorAll('[data-toggle]').forEach(el => el.addEventListener('click', () => {
+  const k = el.dataset.toggle; S[k] = !S[k];
+  el.classList.toggle('on', S[k]);
+  if (k === 'dry_run') renderDry();
+  scheduleSave();
+}));
+
+// ---- actions ----------------------------------------------------------------
+async function findWindow() {
+  await api('save_settings', S);
+  const r = await api('find_window');
+  const t = $('#winTag'); t.hidden = false;
+  t.className = 'tag ' + (r && r.found ? 'tag-accent' : 'tag-neutral');
+  t.textContent = r && r.found ? `✔ nalezeno, ${r.w}×${r.h}` : '✖ nenalezeno';
+}
+async function start() {
+  clearTimeout(saveTimer); await api('save_settings', S);
+  if (!S.dry_run) { $('#confirmDlg').hidden = false; return; }
+  showLog(); api('start');
+}
+function closeConfirm(ok) { $('#confirmDlg').hidden = true; if (ok) { showLog(); api('start'); } }
+function showLog() { const r = document.querySelector('.right'); r.scrollTo({ top: r.scrollHeight, behavior: 'smooth' }); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('#confirmDlg').hidden = true; $('#previewDlg').hidden = true; } });
+
+// ---- called from Python -----------------------------------------------------
+function addLog(t, m, cls) {
+  const log = $('#log');
+  const stick = log.scrollTop + log.clientHeight >= log.scrollHeight - 8;
+  const row = document.createElement('div');
+  const ts = document.createElement('span'); ts.className = 't'; ts.textContent = t;
+  const ms = document.createElement('span'); ms.textContent = m;
+  if (!cls) cls = /^(✔|=== Prodáno)/.test(m.trim()) ? 'ok' : /^(✖|⚠|■)/.test(m.trim()) ? 'err' : '';
+  if (cls) ms.className = cls;
+  row.append(ts, ms); log.append(row);
+  while (log.childElementCount > 2000) log.firstChild.remove();
+  if (stick) log.scrollTop = log.scrollHeight;
+}
+window.onLog = (t, m) => addLog(t, m);
+window.onStatus = st => {
+  running = st.running;
+  $('#btnStart').hidden = running; $('#btnStop').hidden = !running;
+  document.querySelectorAll('.busy-off').forEach(b => b.disabled = st.busy);
+  $('#btnStart').disabled = st.busy && !running;
+  const dot = $('#statusDot');
+  // ready = green; working (fetch / test / run) = pulsing accent
+  const work = running || st.busy;
+  const col = work ? 'var(--color-accent)' : '#4ade80';
+  dot.style.background = col; dot.style.boxShadow = `0 0 8px ${col}`;
+  dot.classList.toggle('pulse', work);
+  $('#statusText').textContent = st.statusText;
+  $('#dataText').textContent = st.dataText;
+};
+window.onPreview = url => { $('#previewImg').src = url; $('#previewDlg').hidden = false; };
+
+window.addEventListener('pywebviewready', async () => {
+  const st = await api('get_state');
+  if (!st) return;
+  S = st.settings; fill();
+  $('#verTag').textContent = 'v' + st.version;
+  $('#appTitle').textContent = 'Fishao Seller ' + st.version;
+  window.onStatus(st.status);
+  (st.logs || []).forEach(l => addLog(l[0], l[1]));
+});
+</script>
+</body>
+</html>

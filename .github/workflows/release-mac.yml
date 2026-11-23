@@ -1,0 +1,62 @@
+# macOS verze (složka mac/). Release vznikne pushnutím tagu mac-vX.Y.Z,
+# kde X.Y.Z musí odpovídat __version__ v mac/fishao_seller/__init__.py.
+name: Release macOS
+
+on:
+  push:
+    tags: ["mac-v*"]
+  workflow_dispatch:   # jen sestavení na zkoušku, bez releasu
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest   # Apple Silicon (M1+)
+    defaults:
+      run:
+        working-directory: mac
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Kontrola verze
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          V=$(python3 -c "import re;print(re.search(r'\"(.+)\"',open('fishao_seller/__init__.py').read()).group(1))")
+          test "mac-v$V" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME != verze $V"; exit 1; }
+
+      - name: Build
+        run: bash build_mac.sh
+
+      - name: Selftest sestavené aplikace
+        run: '"dist/Fishao Seller.app/Contents/MacOS/Fishao Seller" --selftest'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FishaoSeller-mac
+          path: |
+            mac/dist/FishaoSeller-mac.zip
+            mac/dist/NAVOD_MAC.txt
+
+      - name: GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${GITHUB_REF_NAME#mac-v}"
+          cat > notes.md <<EOF
+          **Verze pro macOS** (Apple Silicon, M1 a novější). Verze pro Windows je v releasech \`win-v…\`.
+
+          **Stáhni \`FishaoSeller-mac.zip\`**, rozbal ho a přetáhni „Fishao Seller.app“ do Aplikací. Návod je v \`NAVOD_MAC.txt\`.
+
+          - Aplikace není podepsaná u Applu, takže ji poprvé otevři pravým tlačítkem → Otevřít. Když macOS hlásí „poškozená“, spusť v Terminálu: \`xattr -cr "/Applications/Fishao Seller.app"\`
+          - Povol jí Nahrávání obrazovky a Zpřístupnění (Nastavení systému → Soukromí a zabezpečení).
+          - Nouzové zastavení: **fn+F12**, nebo myš do levého horního rohu obrazovky.
+
+          ⚠️ Automatizace hry může být proti pravidlům hry – používáš na vlastní riziko.
+          EOF
+          gh release create "$GITHUB_REF_NAME" dist/FishaoSeller-mac.zip dist/NAVOD_MAC.txt \
+            --title "Fishao Seller Mac $V" --notes-file notes.md --latest=false

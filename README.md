@@ -1,5 +1,8 @@
 # Fishao Seller
 
+> **Verze pro macOS** je samostatný projekt ve složce [`mac/`](mac/), releasy `mac-v…`.
+> Tady v kořeni je verze pro Windows, releasy `win-v…`.
+
 Automatický prodej ryb ve hře **FISHAO – Reborn** podle cen z [fishao-tracker.cz](https://fishao-tracker.cz/#market).
 
 Bot projde obchod „NAŠE DNEŠNÍ CENY“, u každé ryby přečte název, počet a dnešní cenu, porovná ji
@@ -45,3 +48,8 @@ build.bat                :: sestaví dist\FishaoSeller.exe
 ```
 
 Neoficiální fanouškovský projekt, nijak nespojený s GamoVation ani s fishao-tracker.cz.
+
+## Release (Windows)
+
+Zvyš `__version__` v `fishao_seller/__init__.py`, commitni a pushni tag `win-vX.Y.Z`.
+GitHub Action **Release Windows** sestaví `FishaoSeller.exe` a vytvoří release „Fishao Seller Windows X.Y.Z“.

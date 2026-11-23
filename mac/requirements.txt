@@ -1,0 +1,12 @@
+numpy
+opencv-python-headless
+pillow
+mss
+rapidfuzz
+websocket-client
+pywebview
+pyobjc-core
+pyobjc-framework-Cocoa
+pyobjc-framework-Quartz
+pyobjc-framework-Vision
+pyobjc-framework-ApplicationServices
