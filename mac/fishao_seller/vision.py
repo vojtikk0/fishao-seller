@@ -177,13 +177,35 @@ def name_region(img, b: Rect):
     return x0, y0, x1, y1
 
 
+def _name_fill(crop, scale=1.0, bold=False):
+    """Fish names are yellow with a brown outline; Apple Vision reads them much better as plain
+    black text on white (measured on a real Mac: 12/12 cards vs 5/12 from the raw crop)."""
+    if scale != 1.0:
+        crop = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    m = cv2.inRange(cv2.cvtColor(crop, cv2.COLOR_BGR2HSV), (10, 110, 150), (40, 255, 255))
+    if bold:
+        k = max(2, round(crop.shape[0] / 28))
+        m = cv2.dilate(m, np.ones((k, k), np.uint8))
+    g = cv2.copyMakeBorder(255 - m, 12, 12, 12, 12, cv2.BORDER_REPLICATE)
+    return cv2.cvtColor(g, cv2.COLOR_GRAY2BGR)
+
+
+def _name_attempts(crop):
+    yield _name_fill(crop, 1.5)
+    yield _name_fill(crop, 2.0)
+    yield _name_fill(crop, 1.0, bold=True)
+    yield _name_fill(crop, 3.0)
+    yield crop
+    yield cv2.resize(crop, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
+
+
 def read_card(img, b: Rect) -> Card:
     card = Card(button=b)
     x0, y0, x1, y1 = name_region(img, b)
     if y1 - y0 < b.h * 0.8:
         return card
     crop = img[y0:y1, x0:x1]
-    for attempt in (crop, cv2.resize(crop, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)):
+    for attempt in _name_attempts(crop):
         lines = ocr.read_lines(attempt)
         for ln in lines:
             m = _NAME_RE.match(ln.text.strip())

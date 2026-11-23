@@ -129,7 +129,7 @@ c.bind("<Button-1>", lambda e: print("CLICK", e.x, e.y, flush=True))
 c.bind("<MouseWheel>", lambda e: print("WHEEL", e.delta, flush=True))
 root.geometry(f"+80+80")
 root.after(800, lambda: print("READY", img.width, img.height, c.winfo_rootx(), c.winfo_rooty(), sw, sh, flush=True))
-root.lift(); root.attributes("-topmost", True); root.after(1500, lambda: root.attributes("-topmost", False))
+root.lift(); root.focus_force()
 root.mainloop()
 """
 
@@ -170,6 +170,11 @@ def test_quartz():
         iw, ih, rx, ry, sw, sh = map(int, ready)
         print(f"  (screen {sw}x{sh} pt, window content {iw}x{ih} at {rx},{ry})")
         wid, best = None, 0
+        for _ in range(25):  # the window server may list the window a moment after Tk maps it
+            if any(int(w.get(Quartz.kCGWindowOwnerPID, -1)) == p.pid and w.get(Quartz.kCGWindowLayer) == 0
+                   and (w.get(Quartz.kCGWindowBounds) or {}).get("Height", 0) > 200 for w in macutil._all_windows()):
+                break
+            time.sleep(0.2)
         for w in macutil._all_windows():
             if int(w.get(Quartz.kCGWindowOwnerPID, -1)) == p.pid and w.get(Quartz.kCGWindowLayer) == 0:
                 b = w.get(Quartz.kCGWindowBounds) or {}
