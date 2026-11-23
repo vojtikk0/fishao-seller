@@ -32,7 +32,7 @@ def _languages():
             sup = [str(x) for x in (sup or [])]
             for tag in ("cs-CZ", "cs"):
                 if tag in sup:
-                    _langs = [tag, "en-US"]
+                    _langs = [tag] + [t for t in ("en-US", "en") if t in sup][:1]
                     break
         except Exception:
             pass
@@ -45,26 +45,21 @@ def check_available() -> None:
     _languages()
 
 
-def read_lines(img) -> list:
-    """OCR a BGR (or gray) numpy image."""
-    if img is None or img.size == 0:
-        return []
-    if img.ndim == 2:
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    H, W = img.shape[:2]
-    ok, png = cv2.imencode(".png", img)
-    if not ok:
-        return []
+_plain = False  # True once this macOS rejected our request options
+
+
+def _recognize(png, W, H, plain=False):
     out = []
     with objc.autorelease_pool():
         data = NSData.dataWithBytes_length_(png.tobytes(), len(png))
         req = Vision.VNRecognizeTextRequest.alloc().init()
         req.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
-        req.setUsesLanguageCorrection_(False)  # would "fix" fish names and numbers
-        req.setMinimumTextHeight_(min(1.0, 8.0 / H))  # default skips text < 1/32 of the image
-        langs = _languages()
-        if langs:
-            req.setRecognitionLanguages_(langs)
+        if not plain:
+            req.setUsesLanguageCorrection_(False)  # would "fix" fish names and numbers
+            req.setMinimumTextHeight_(min(1.0, 8.0 / H))  # default skips text < 1/32 of the image
+            langs = _languages()
+            if langs:
+                req.setRecognitionLanguages_(langs)
         handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(data, {})
         ok, err = handler.performRequests_error_([req], None)
         if not ok:
@@ -80,5 +75,28 @@ def read_lines(img) -> list:
             h = bb.size.height * H
             y = (1.0 - bb.origin.y - bb.size.height) * H
             out.append(Line(text, int(round(x)), int(round(y)), int(round(w)), int(round(h))))
+    return out
+
+
+def read_lines(img) -> list:
+    """OCR a BGR (or gray) numpy image."""
+    if img is None or img.size == 0:
+        return []
+    if img.ndim == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    H, W = img.shape[:2]
+    ok, png = cv2.imencode(".png", img)
+    if not ok:
+        return []
+    global _plain
+    try:
+        out = _recognize(png, W, H, plain=_plain)
+    except ValueError:
+        # PyObjC turns an Objective-C NSInvalidArgumentException into ValueError. Some macOS
+        # versions reject one of the request options -> retry with Vision's defaults only.
+        if _plain:
+            raise
+        out = _recognize(png, W, H, plain=True)
+        _plain = True
     out.sort(key=lambda l: (l.y, l.x))
     return out

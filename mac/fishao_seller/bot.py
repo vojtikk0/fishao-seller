@@ -8,7 +8,7 @@ from datetime import datetime
 import cv2
 import numpy as np
 
-from . import macutil, ocr, vision
+from . import errlog, macutil, ocr, vision
 from .config import LOG_DIR, Settings
 from .pricing import Catalog, decide, market_closed_today
 
@@ -223,7 +223,8 @@ class Bot:
         except Abort as e:
             self.log(f"✖ {e}")
         except Exception as e:
-            self.log(f"✖ Chyba: {e!r}")
+            self.log(f"✖ Chyba: {errlog.record(e, 'bot.run')}")
+            self.log("  Podrobnosti jsou v logs/chyby.log (tlačítko Logy) – pošli ten soubor autorovi.")
             try:
                 self.save_shot(self.cap.grab()[0], "chyba")
             except Exception:

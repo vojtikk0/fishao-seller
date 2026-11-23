@@ -350,7 +350,7 @@ def test_misc():
     try:
         api = webview_app.Api()
         st = api.get_state()
-        check("GUI state", st["version"] == "1.0.0" and "settings" in st)
+        check("GUI state", st["version"] == webview_app.__version__ and "settings" in st)
         desktop()
         check("GUI find_window", api.find_window() == {"found": True, "w": GW, "h": GH})
         api.open_logs()

@@ -122,8 +122,21 @@ def activate(hwnd) -> bool:
     app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid) if pid > 0 else None
     if app is None:
         return False
-    app.unhide()
-    app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
+    try:
+        app.unhide()
+    except Exception:
+        pass
+    try:
+        app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
+    except Exception:
+        # option deprecated since macOS 14 - newer systems may reject it
+        try:
+            app.activateWithOptions_(0)
+        except Exception:
+            subprocess.run(["osascript", "-e",
+                            f'tell application "System Events" to set frontmost of '
+                            f'(first process whose unix id is {pid}) to true'],
+                           capture_output=True, timeout=5)
     for _ in range(10):
         time.sleep(0.1)
         if is_foreground(hwnd):

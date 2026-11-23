@@ -5,7 +5,7 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from . import __version__, macutil, tracker
+from . import __version__, errlog, macutil, tracker
 from .config import LOG_DIR, Settings
 
 MODES = [("range", "Cena v horní části rozmezí min–max (X % = kde v rozmezí leží)"),
@@ -242,7 +242,8 @@ class App:
             try:
                 fn()
             except Exception as e:
-                self.log(f"✖ {e}")
+                msg = errlog.user_message(e) or errlog.record(e, "tk")
+                self.log(f"✖ {msg}" if errlog.user_message(e) else f"✖ Chyba: {msg}")
             finally:
                 self.q.put(("done", None))
 

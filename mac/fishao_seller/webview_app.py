@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import webview
 
-from . import __version__, macutil, tracker
+from . import __version__, errlog, macutil, tracker
 from .config import LOG_DIR, Settings
 
 
@@ -88,7 +88,8 @@ class Api:
             try:
                 fn()
             except Exception as e:
-                self._log(f"✖ {e}")
+                msg = errlog.user_message(e) or errlog.record(e, "webview")
+                self._log(f"✖ {msg}" if errlog.user_message(e) else f"✖ Chyba: {msg}")
             finally:
                 self._running = False
                 self._push_status()
