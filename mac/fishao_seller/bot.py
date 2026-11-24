@@ -51,7 +51,15 @@ class Bot:
     def grab(self):
         self.check_stop()
         self.ensure_foreground()  # otherwise we'd be reading whatever covers the game
-        img, self.origin = self.cap.grab()
+        try:
+            img, self.origin = self.cap.grab()
+        except RuntimeError:
+            # the game may have recreated its window (new window number) -> look it up again once
+            hwnd = macutil.find_window(self.s.window_title)
+            if not hwnd or hwnd == self.hwnd:
+                raise
+            self.hwnd = self.cap.hwnd = hwnd
+            img, self.origin = self.cap.grab()
         return img
 
     def ensure_foreground(self):

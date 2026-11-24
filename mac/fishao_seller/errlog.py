@@ -11,6 +11,14 @@ from .config import LOG_DIR
 LOG_FILE = os.path.join(LOG_DIR, "chyby.log")
 
 
+def _pyobjc() -> str:
+    try:
+        import objc
+        return str(objc.__version__)
+    except Exception:
+        return "?"
+
+
 def where(e: BaseException) -> str:
     """'file.py:123 func' of the deepest frame inside our package (else the deepest frame)."""
     frames = traceback.extract_tb(e.__traceback__)
@@ -35,6 +43,7 @@ def record(e: BaseException, context: str = "") -> str:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"===== {time.strftime('%Y-%m-%d %H:%M:%S')} | Fishao Seller Mac {__version__} | "
                     f"macOS {platform.mac_ver()[0]} {platform.machine()} | Python {sys.version.split()[0]}"
+                    f" | PyObjC {_pyobjc()}"
                     f"{' | ' + context if context else ''}\n")
             f.write("".join(traceback.format_exception(type(e), e, e.__traceback__)))
             f.write("\n")

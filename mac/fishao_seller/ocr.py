@@ -1,4 +1,5 @@
 """macOS OCR via Apple Vision (VNRecognizeTextRequest), returning lines + boxes."""
+import os
 from dataclasses import dataclass
 
 import cv2
@@ -45,10 +46,68 @@ def check_available() -> None:
     _languages()
 
 
-_plain = False  # True once this macOS rejected our request options
+_plain = False   # True once this macOS rejected our request options
+_handler_way = None  # index into _HANDLERS of the way that worked on this Mac
+
+
+def _h_data_dict(data, png):
+    return Vision.VNImageRequestHandler.alloc().initWithData_options_(data, {}), None
+
+
+def _h_data_none(data, png):
+    return Vision.VNImageRequestHandler.alloc().initWithData_options_(data, None), None
+
+
+def _h_data_nsdict(data, png):
+    from Foundation import NSDictionary
+    return Vision.VNImageRequestHandler.alloc().initWithData_options_(data, NSDictionary.dictionary()), None
+
+
+def _h_cgimage(data, png):
+    import Quartz
+    src = Quartz.CGImageSourceCreateWithData(data, None)
+    cg = Quartz.CGImageSourceCreateImageAtIndex(src, 0, None) if src is not None else None
+    if cg is None:
+        raise RuntimeError("CGImage se nepodařilo vytvořit")
+    from Foundation import NSDictionary
+    return Vision.VNImageRequestHandler.alloc().initWithCGImage_options_(cg, NSDictionary.dictionary()), None
+
+
+def _h_url(data, png):
+    import tempfile
+    from Foundation import NSURL, NSDictionary
+    fd, path = tempfile.mkstemp(suffix=".png", prefix="fishao_ocr_")
+    with os.fdopen(fd, "wb") as f:
+        f.write(png.tobytes())
+    h = Vision.VNImageRequestHandler.alloc().initWithURL_options_(
+        NSURL.fileURLWithPath_(path), NSDictionary.dictionary())
+    return h, path  # the temp file is deleted after performRequests
+
+
+# Newer macOS versions (27+) reject some of these with NSInvalidArgumentException
+# ("key does not exist"), so try them in turn and remember the first that works.
+_HANDLERS = [("data+{}", _h_data_dict), ("data+None", _h_data_none), ("data+NSDictionary", _h_data_nsdict),
+             ("CGImage", _h_cgimage), ("soubor", _h_url)]
+
+
+def _perform(way, data, png, req):
+    h, tmp = way(data, png)
+    try:
+        if h is None:
+            raise RuntimeError("VNImageRequestHandler je None")
+        ok, err = h.performRequests_error_([req], None)
+    finally:
+        if tmp:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    if not ok:
+        raise RuntimeError(f"performRequests selhalo: {err}")
 
 
 def _recognize(png, W, H, plain=False):
+    global _handler_way
     out = []
     with objc.autorelease_pool():
         data = NSData.dataWithBytes_length_(png.tobytes(), len(png))
@@ -60,10 +119,21 @@ def _recognize(png, W, H, plain=False):
             langs = _languages()
             if langs:
                 req.setRecognitionLanguages_(langs)
-        handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(data, {})
-        ok, err = handler.performRequests_error_([req], None)
-        if not ok:
-            raise RuntimeError(f"Apple Vision OCR selhalo: {err}")
+        order = list(range(len(_HANDLERS)))
+        if _handler_way is not None:
+            order.remove(_handler_way)
+            order.insert(0, _handler_way)
+        errors = []
+        for i in order:
+            name, way = _HANDLERS[i]
+            try:
+                _perform(way, data, png, req)
+                _handler_way = i
+                break
+            except Exception as e:  # noqa: BLE001 - try the next way, report all at the end
+                errors.append(f"{name}: {e!r}")
+        else:
+            raise ValueError("Apple Vision OCR selhalo všemi způsoby -> " + " | ".join(errors))
         for obs in req.results() or []:
             cands = obs.topCandidates_(1)
             if not cands:

@@ -190,6 +190,15 @@ def test_ocr():
     check("grayscale input works", isinstance(ocr.read_lines(gray), list))
     ocr.check_available()
     check("check_available passes", True)
+    W.macos27 = True
+    try:
+        before = [l.text for l in _win_ocr.read_lines(LIST1)]
+        got = [l.text for l in ocr.read_lines(LIST1)]
+        check("macOS 27: falls back when Vision rejects image data", sorted(got) == sorted(before))
+        check("macOS 27: fallback remembered", ocr._HANDLERS[ocr._handler_way][0] == "soubor")
+    finally:
+        W.macos27 = False
+        ocr._handler_way = None
 
 
 def test_windows():
@@ -212,6 +221,12 @@ def test_windows():
     check("hidden window = minimized", macutil.is_minimized(77))
     macutil.activate(77)
     check("activate un-minimizes", not macutil.is_minimized(77))
+    W.macos27 = True
+    check("macOS 27: visible window is not minimized", not macutil.is_minimized(77))
+    W.windows[2]["kCGWindowIsOnscreen"] = False
+    check("macOS 27: hidden window = minimized", macutil.is_minimized(77))
+    W.macos27 = False
+    macutil.activate(77)
 
 
 def test_permissions():

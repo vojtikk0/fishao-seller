@@ -98,7 +98,19 @@ def _pid(hwnd):
     return int(w.get(Quartz.kCGWindowOwnerPID, -1)) if w else -1
 
 
+def _on_screen(hwnd) -> bool:
+    opts = Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements
+    for w in Quartz.CGWindowListCopyWindowInfo(opts, Quartz.kCGNullWindowID) or []:
+        if int(w.get(Quartz.kCGWindowNumber, -1)) == int(hwnd):
+            return True
+    return False
+
+
 def is_minimized(hwnd) -> bool:
+    # Newer macOS (27) may leave kCGWindowIsOnscreen out of the single-window query even for a
+    # visible window -> the on-screen window list decides.
+    if _on_screen(hwnd):
+        return False
     w = _info(hwnd)
     return not (w and w.get(Quartz.kCGWindowIsOnscreen))
 
@@ -154,8 +166,12 @@ class Capturer:
     def grab(self):
         global _scale
         x, y, w, h = client_rect(self.hwnd)
-        if w < 200 or h < 200 or is_minimized(self.hwnd):
-            raise RuntimeError("Okno hry je minimalizované nebo příliš malé.")
+        if w == 0 and h == 0:
+            raise RuntimeError("Okno hry zmizelo (hra se zavřela nebo okno vytvořila znovu).")
+        if w < 200 or h < 200:
+            raise RuntimeError(f"Okno hry je příliš malé ({w}×{h}). Zvětši ho.")
+        if is_minimized(self.hwnd):
+            raise RuntimeError("Okno hry je minimalizované nebo na jiné ploše.")
         shot = self._sct.grab({"left": x, "top": y, "width": w, "height": h})
         img = np.asarray(shot)[:, :, :3].copy()
         _scale = img.shape[1] / float(w)

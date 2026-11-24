@@ -49,6 +49,8 @@ class World:
     on_event = None       # callable (event) for the game simulation
     activated = []
     vision_settings = []
+    macos27 = False       # mimic macOS 27: Vision rejects image data (NSInvalidArgumentException
+                          # "key does not exist"), single-window query lacks kCGWindowIsOnscreen
 
 
 def install():
@@ -59,6 +61,8 @@ def install():
     objc.autorelease_pool = contextlib.nullcontext
     Foundation = types.ModuleType("Foundation")
     Foundation.NSData = _Obj(dataWithBytes_length_=lambda b, n: bytes(b[:n]))
+    Foundation.NSDictionary = _Obj(dictionary=lambda: {})
+    Foundation.NSURL = _Obj(fileURLWithPath_=lambda p: ("url", p))
 
     # Vision
     winocr = _win_ocr()
@@ -91,8 +95,15 @@ def install():
             return cls()
 
         def initWithData_options_(self, data, opts):
+            if W.macos27:
+                raise ValueError("NSInvalidArgumentException - key does not exist")
             assert isinstance(opts, dict)
             self.img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+            return self
+
+        def initWithURL_options_(self, url, opts):
+            assert url[0] == "url" and isinstance(opts, dict)
+            self.img = cv2.imdecode(np.fromfile(url[1], np.uint8), cv2.IMREAD_COLOR)
             return self
 
         def performRequests_error_(self, reqs, err):
@@ -127,7 +138,10 @@ def install():
 
     def CGWindowListCopyWindowInfo(opts, wid):
         if opts & Q.kCGWindowListOptionIncludingWindow:
-            return [w for w in W.windows if w["kCGWindowNumber"] == wid]
+            found = [w for w in W.windows if w["kCGWindowNumber"] == wid]
+            if W.macos27:
+                found = [{k: v for k, v in w.items() if k != "kCGWindowIsOnscreen"} for w in found]
+            return found
         if opts & Q.kCGWindowListOptionOnScreenOnly:
             return [w for w in W.windows if w.get("kCGWindowIsOnscreen")]
         return list(W.windows)
